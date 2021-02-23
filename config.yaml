@@ -1,0 +1,9 @@
+---
+
+pathOut: "/home/gchahine/optimizerOutput/"
+graphConstraints: "/home/gchahine/packages/dream-multi-checker/build/graph_input.csv"
+graphInitValues: "/home/gchahine/packages/dream-multi-checker/build/graph_initial_estimate.csv"
+
+
+
+
