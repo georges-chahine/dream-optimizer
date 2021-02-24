@@ -49,7 +49,7 @@ link_directories(${PROJECT_SOURCE_DIR}/thirdparty/g2o/lib ${PROJECT_SOURCE_DIR}/
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
- ${catkin_INCLUDE_DIRS} src ${PROJECT_SOURCE_DIR}/thirdparty/g2o ${PROJECT_SOURCE_DIR}/thirdparty/g2o/build ${PROJECT_SOURCE_DIR}/thirdparty/g2o/EXTERNAL/csparse ${SUITESPARSE_INCLUDE_DIRS}
+ ${catkin_INCLUDE_DIRS} src ${PROJECT_SOURCE_DIR}/thirdparty/g2o ${PROJECT_SOURCE_DIR}/thirdparty/g2o/build ${PROJECT_SOURCE_DIR}/thirdparty/g2o/EXTERNAL/csparse ${SUITESPARSE_INCLUDE_DIRS} ${CSPARSE_INCLUDE_DIR}
 )
 
 

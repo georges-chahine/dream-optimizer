@@ -12,6 +12,7 @@
 #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
 #include "g2o/solvers/cholmod/linear_solver_cholmod.h"
+#include "g2o/solvers/dense/linear_solver_dense.h"
 #include <pcl/common/transforms.h>
 #include "custom_types/vertex_pose.h"
 #include "custom_types/edge_pose_pose.h"
@@ -85,11 +86,18 @@ void addEdge(const Eigen::Isometry3d & a_T_b, const int id_a, const int id_b,
 void addPosesToGraph(Eigen::Isometry3d pose_estimate, int id, g2o::OptimizableGraph* graph_ptr)
 {
 
-        VertexPose * v = new VertexPose();
-        v->setEstimate(pose_estimate);
-        v->setId(id);
-        v->setFixed(false);
-        graph_ptr->addVertex(v);
+    VertexPose * v = new VertexPose();
+    v->setEstimate(pose_estimate);
+    v->setId(id);
+    v->setFixed(false);
+    if (id==0)
+    {
+        std::cout<<"id is "<<id<<std::endl;
+        v->setFixed(true);
+    }
+
+
+    graph_ptr->addVertex(v);
 
 }
 
@@ -98,12 +106,14 @@ int main(int argc, char *argv[]){
 
     g2o::SparseOptimizer graph;
     int dir;
-        graph.setVerbose(true);
+    graph.setVerbose(true);
     YAML::Node config = YAML::LoadFile("../config.yaml");
 
     std::string graphConstraintsStr = config["graphConstraints"].as<std::string>();
     std::string graphInitValuesStr= config["graphInitValues"].as<std::string>();
     std::string pathOut = config["pathOut"].as<std::string>();
+    std::string maxIterationsStr = config["maxIterations"].as<std::string>();
+    int maxIterations=std::stoi(maxIterationsStr);
 
     dir=mkdir (pathOut.c_str(),S_IRWXU);
     MatrixXd graphConstraints = load_csv<MatrixXd>(graphConstraintsStr);
@@ -119,14 +129,14 @@ int main(int argc, char *argv[]){
 
         Eigen::Matrix3d rot(q);
 
-        Eigen::Isometry3d T;
+        Eigen::Isometry3d T=Eigen::Isometry3d::Identity();
         T.matrix().block(0,0,3,3)=rot;
 
-        T(0,3)=graphConstraints(i,1);
+        T(0,3)=graphInitValues(i,1);
         T(1,3)=graphInitValues(i,2);
         T(2,3)=graphInitValues(i,3);
 
-            addPosesToGraph(T, poseId, &graph);
+        addPosesToGraph(T, poseId, &graph);
 
 
     }
@@ -146,12 +156,19 @@ int main(int argc, char *argv[]){
 
         Eigen::Matrix3d rot(q);
 
-        Eigen::Isometry3d T;
+        Eigen::Isometry3d T=Eigen::Isometry3d::Identity();
         T.matrix().block(0,0,3,3)=rot;
-
+        //std::cout<<"T was \n"<<T.matrix()<<std::endl;
         T(0,3)=graphConstraints(i,2);
         T(1,3)=graphConstraints(i,3);
         T(2,3)=graphConstraints(i,4);
+
+        //std::cout<<"T is \n"<<T.matrix()<<std::endl;
+        if (T.matrix().isIdentity(0.01)){
+            std::cout<<"filtering Identity"<<std::endl;
+            continue;
+
+        }
 
         Eigen::Matrix<double, 6, 6> Lambda;
         Lambda.setIdentity();
@@ -167,16 +184,24 @@ int main(int argc, char *argv[]){
 
 
     // finished populating graph, export and quit
-     g2o::BlockSolver_6_3::LinearSolverType * linearSolver;
-    linearSolver = new g2o::LinearSolverCholmod<g2o::BlockSolver_6_3::PoseMatrixType>();
+    g2o::BlockSolver_6_3::LinearSolverType * linearSolver;
+    bool DENSE=false;
+    if (DENSE) {
+        linearSolver= new g2o::LinearSolverDense<g2o::BlockSolver_6_3::PoseMatrixType>();
+    } else {
+        linearSolver= new g2o::LinearSolverCholmod<g2o::BlockSolver_6_3::PoseMatrixType>();
+    }
+
+    // linearSolver = new g2o::LinearSolverCholmod<g2o::BlockSolver_6_3::PoseMatrixType>();
     g2o::BlockSolver_6_3 * solver_ptr= new g2o::BlockSolver_6_3(linearSolver);
     g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
 
     graph.setAlgorithm(solver);
-        graph.initializeOptimization();
-     graph.optimize(100);
+    graph.initializeOptimization();
+
     std::cout << "Saving Graph to example_g2o.g2o...\n";
     graph.save("example_g2o.g2o");
+    graph.optimize(maxIterations);
     std::cout << "Finished\n";
     std::cout << "rosrun g2o_viewer g2o_viewer example_g2o.g2o\n";
 
