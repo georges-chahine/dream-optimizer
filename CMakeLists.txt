@@ -3,13 +3,15 @@ project(dream_offline_optimizer)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
-set(CMAKE_CXX_STANDARD 14)
-add_compile_options(-std=c++14)
+#set(CMAKE_CXX_STANDARD 11)
+#add_compile_options(-std=c++11)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-list( APPEND CMAKE_MODULE_PATH /home/gchahine/packages/g2o/cmake_modules ) 
-set (G2O_ROOT  /usr/local/include/g2o)
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/thirdparty/g2o/cmake_modules ) 
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/thirdparty/g2o/EXTERNAL/csparse ) 
+set (G2O_ROOT  ${PROJECT_SOURCE_DIR}/thirdparty/g2o/build)
+set (CSPARSE_ROOT  ${PROJECT_SOURCE_DIR}/thirdparty/g2o/EXTERNAL/csparse)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rosbag
@@ -19,8 +21,11 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
   pcl_ros
+
 )
 find_package(G2O REQUIRED)
+FIND_PACKAGE(SuiteSparse)
+
 
 
 
@@ -39,11 +44,12 @@ add_definitions("-DENABLE_SSE")
 
 set(CMAKE_BUILD_TYPE Debug)
 
-
+#add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/g2o)
+link_directories(${PROJECT_SOURCE_DIR}/thirdparty/g2o/lib ${PROJECT_SOURCE_DIR}/thirdparty/g2o/EXTERNAL/csparse)
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
- ${catkin_INCLUDE_DIRS} src ${G2O_INCLUDE_DIR}
+ ${catkin_INCLUDE_DIRS} src ${PROJECT_SOURCE_DIR}/thirdparty/g2o ${PROJECT_SOURCE_DIR}/thirdparty/g2o/build ${PROJECT_SOURCE_DIR}/thirdparty/g2o/EXTERNAL/csparse ${SUITESPARSE_INCLUDE_DIRS}
 )
 
 
@@ -64,12 +70,16 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/robot_tf_node.cpp)
 
-SET (G2O_LIBS csparse cxsparse g2o_csparse_extension g2o_cli g2o_core g2o_interface g2o_parser g2o_solver_cholmod
+SET (G2O_LIBS cxsparse g2o_csparse_extension g2o_cli g2o_core g2o_interface g2o_parser g2o_solver_cholmod
 g2o_solver_csparse g2o_solver_dense g2o_solver_pcg g2o_stuff g2o_types_icp
 g2o_types_sba g2o_types_sim3 g2o_types_slam2d g2o_types_slam3d)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ./)
-set(LIBRARY_OUTPUT_PATH lib)
+set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/thirdparty/g2o/)
+set(LIBRARY_OUTPUT_PATH)
 add_executable(dream_offline_optimizer src/main.cpp)
+
+
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/thirdparty/g2o/bin)
 
 
 ####### g2o custom types ###############################
@@ -87,7 +97,7 @@ ADD_SUBDIRECTORY(src/custom_types)
 #message("libpointchecker_LIBRARIES: ${libpointchecker_LIBRARIES}")
 ## Specify libraries to link a library or executable target against
  target_link_libraries(dream_offline_optimizer yaml-cpp
-   ${catkin_LIBRARIES} g2o_core g2o_stuff g2o_custom_types ${G2O_LIBS}
+   ${catkin_LIBRARIES} ${G2O_LIBS} g2o_custom_types cholmod
  )
 
 #############

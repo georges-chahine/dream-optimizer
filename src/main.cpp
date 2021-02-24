@@ -11,14 +11,14 @@
 #include "tf_conversions/tf_eigen.h"
 #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
-
+#include "g2o/solvers/cholmod/linear_solver_cholmod.h"
 #include <pcl/common/transforms.h>
 #include "custom_types/vertex_pose.h"
 #include "custom_types/edge_pose_pose.h"
-
+#include "g2o/core/optimization_algorithm_levenberg.h"
 #include <g2o/core/sparse_optimizer.h>
 #include <g2o/core/block_solver.h>
-
+#include "g2o/core/solver.h"
 using namespace std;
 using namespace Eigen;
 
@@ -68,7 +68,7 @@ void addEdge(const Eigen::Isometry3d & a_T_b, const int id_a, const int id_b,
 
     // add information matrix
     //Eigen::Matrix<double, 6, 6> Lambda;
-    Lambda.setIdentity();
+    //Lambda.setIdentity();
 
     // set the observation and imformation matrix
     e->setMeasurement(a_T_b);
@@ -98,6 +98,7 @@ int main(int argc, char *argv[]){
 
     g2o::SparseOptimizer graph;
     int dir;
+        graph.setVerbose(true);
     YAML::Node config = YAML::LoadFile("../config.yaml");
 
     std::string graphConstraintsStr = config["graphConstraints"].as<std::string>();
@@ -166,7 +167,14 @@ int main(int argc, char *argv[]){
 
 
     // finished populating graph, export and quit
-    graph.initializeOptimization();
+     g2o::BlockSolver_6_3::LinearSolverType * linearSolver;
+    linearSolver = new g2o::LinearSolverCholmod<g2o::BlockSolver_6_3::PoseMatrixType>();
+    g2o::BlockSolver_6_3 * solver_ptr= new g2o::BlockSolver_6_3(linearSolver);
+    g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
+
+    graph.setAlgorithm(solver);
+        graph.initializeOptimization();
+     graph.optimize(100);
     std::cout << "Saving Graph to example_g2o.g2o...\n";
     graph.save("example_g2o.g2o");
     std::cout << "Finished\n";
