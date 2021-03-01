@@ -83,7 +83,7 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/thirdparty/g2o/bin)
 
 
 ####### g2o custom types ###############################
-ADD_SUBDIRECTORY(src/custom_types)
+#ADD_SUBDIRECTORY(src/custom_types)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -97,7 +97,7 @@ ADD_SUBDIRECTORY(src/custom_types)
 #message("libpointchecker_LIBRARIES: ${libpointchecker_LIBRARIES}")
 ## Specify libraries to link a library or executable target against
  target_link_libraries(dream_offline_optimizer yaml-cpp
-   ${catkin_LIBRARIES} ${G2O_LIBS} g2o_custom_types cholmod
+   ${catkin_LIBRARIES} ${G2O_LIBS} cholmod #g2o_custom_types cholmod
  )
 
 #############
