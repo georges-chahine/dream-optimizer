@@ -41,6 +41,7 @@ M load_csv (const std::string & path) {
         std::stringstream lineStream(line);
         std::string cell;
         while (std::getline(lineStream, cell, ',')) {
+            std::cout<<cell<<std::endl;
             values.push_back(std::stod(cell));
         }
         ++rows;
@@ -126,7 +127,7 @@ void addPosesToGraph(Eigen::Isometry3d pose_estimate, int id, g2o::OptimizableGr
     if (id==0)
     {
         std::cout<<"id is "<<id<<std::endl;
-        v_se3->setFixed(true);
+        //v_se3->setFixed(true);
     }
 
 
@@ -260,7 +261,17 @@ int main(int argc, char *argv[]){
     std::cout << "Saving Graph to example_g2o.g2o...\n";
     graph.save("example_g2o.g2o");
     graph.optimize(maxIterations);
-     graph.save("example_g2o_opt.g2o");
+   // g2o::OptimizableGraph::VertexContainer V=graph.activeVertices();
+
+    VertexSE3* firstRobotPose = dynamic_cast<VertexSE3*>(graph.vertex(0));
+
+    double* estimate;
+   // firstRobotPose->getEstimateData(estimate);
+    //std::cout<<estimate[0]<<" "<<estimate[1]<<" "<<estimate[2]<<" "<<estimate[3]<<" "<<estimate[4]<<" "<<estimate[5]<<" "<<estimate[6]<<std::endl;
+
+
+
+    graph.save("example_g2o_opt.g2o");
     std::cout << "Finished\n";
     std::cout << "rosrun g2o_viewer g2o_viewer example_g2o.g2o\n";
 
