@@ -230,7 +230,7 @@ void addPosesToGraph(Eigen::Isometry3d pose_estimate, int id, g2o::OptimizableGr
     if (id==0)
     {
         std::cout<<"id is "<<id<<std::endl;
-        v_se3->setFixed(true);
+        v_se3->setFixed(false);
     }
 
 
