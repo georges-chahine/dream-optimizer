@@ -50,6 +50,109 @@ M load_csv (const std::string & path) {
 }
 
 
+
+Eigen::MatrixXd load_g2o (std::string path, MatrixXd transforms0) {
+
+    std::string line;
+    std::ifstream inFile(path);
+
+    std::string str;
+    double x,y,z,qx,qy,qz,qw;
+    std::vector<double> xV,yV,zV,qxV,qyV,qzV,qwV;
+    unsigned int idxNbr;
+    std::vector<unsigned int> idxNbrV;
+
+    time_t t1;
+    float temprature;
+
+    int maxKF=transforms0(transforms0.rows()-1,0);
+    std::cout<<"maxKF is " <<maxKF<<std::endl;
+    while (inFile >> str >>idxNbr >> x >>y >>z >>qx>>qy>>qz>>qw)
+    {
+        if (str!="VERTEX_SE3:QUAT"){break;};
+        xV.push_back(x);
+        yV.push_back(y);
+        zV.push_back(z);
+        qxV.push_back(qx);
+        qyV.push_back(qy);
+        qzV.push_back(qz);
+        qwV.push_back(qw);
+        idxNbrV.push_back(idxNbr);
+        //cout << x << " " << y << endl;
+
+    }
+    vector<vector<int>> idxNbrV2;
+
+    for (int i=0; i<=idxNbrV.back(); i++){
+
+        // std::cout<<"current KF " <<i%(maxKF+1)<<" current T "<< int (i)/(maxKF+1) <<std::endl;
+        //std::cout<<"current KF " <<int(i/maxKF)<<std::endl;
+        int KF=i%(maxKF+1);
+        int T=int (i/(maxKF+1));
+        idxNbrV2.push_back(std::vector<int> {KF, T, i});
+
+    }
+
+    Eigen::MatrixXd transforms(idxNbrV2.size(),10);
+
+
+    //Eigen::MatrixXd transforms1(1,idxNbrV.size());
+
+    for (int i=0; i<transforms.rows(); i++){
+
+
+        transforms(i,0)=idxNbrV2[i][0];
+        transforms(i,1)=idxNbrV2[i][1];
+        bool found=false;
+        for (int j=0; j<idxNbrV.size(); j++){
+
+
+            if (idxNbrV[j]==idxNbrV2[i][2]){
+                transforms(i,2)=xV[j];
+                transforms(i,3)=yV[j];
+                transforms(i,4)=zV[j];
+                transforms(i,5)=qxV[j];
+                transforms(i,6)=qyV[j];
+                transforms(i,7)=qzV[j];
+                transforms(i,8)=qwV[j];
+                found=true;
+
+            }
+        }
+
+        if (!found){
+
+            transforms(i,2)=0;
+            transforms(i,3)=0;
+            transforms(i,4)=0;
+            transforms(i,5)=0;
+            transforms(i,6)=0;
+            transforms(i,7)=0;
+            transforms(i,8)=1;
+
+
+        }
+
+        for (int j=0; j<transforms0.rows(); j++){
+
+            if (transforms0(j,0)==idxNbrV2[i][0] && transforms0(j,1)==idxNbrV2[i][1]){
+
+                transforms(i,9)=transforms0(j,9);
+
+            }
+
+        }
+
+
+    }
+
+    inFile.close();
+
+    std::cout<<transforms<<std::endl;
+
+    return transforms;
+}
+
 void addEdge(const Eigen::Isometry3d & a_T_b, const int id_a, const int id_b,
              g2o::OptimizableGraph* graph_ptr, Eigen::Matrix<double, 6, 6> Lambda)
 {
@@ -127,7 +230,7 @@ void addPosesToGraph(Eigen::Isometry3d pose_estimate, int id, g2o::OptimizableGr
     if (id==0)
     {
         std::cout<<"id is "<<id<<std::endl;
-        //v_se3->setFixed(true);
+        v_se3->setFixed(true);
     }
 
 
@@ -274,6 +377,8 @@ int main(int argc, char *argv[]){
     graph.save("example_g2o_opt.g2o");
     std::cout << "Finished\n";
     std::cout << "rosrun g2o_viewer g2o_viewer example_g2o.g2o\n";
+
+
 
 
     return 0;
