@@ -14,11 +14,12 @@
 #include "g2o/solvers/cholmod/linear_solver_cholmod.h"
 #include "g2o/solvers/dense/linear_solver_dense.h"
 #include "g2o/stuff/sampler.h"
-
+#include "g2o/core/robust_kernel_impl.h"
 #include <pcl/common/transforms.h>
 //#include "custom_types/vertex_pose.h"
 //#include "custom_types/edge_pose_pose.h"
 #include "g2o/types/sba/types_six_dof_expmap.h"
+#include "g2o/config.h"
 #include "g2o/core/optimization_algorithm_levenberg.h"
 #include <g2o/core/sparse_optimizer.h>
 #include <g2o/core/block_solver.h>
@@ -199,6 +200,8 @@ void addEdge(const Eigen::Isometry3d & a_T_b, const int id_a, const int id_b,
     // e->information() = Lambda;
     v_se3->information() = Lambda;
     // finally add the edge to the graph
+    g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
+    v_se3->setRobustKernel(rk);
     if(!graph_ptr->addEdge(v_se3))
     {
         assert(false);
