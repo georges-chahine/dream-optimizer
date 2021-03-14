@@ -200,7 +200,7 @@ void addEdge(const Eigen::Isometry3d & a_T_b, const int id_a, const int id_b,
     // e->information() = Lambda;
     v_se3->information() = Lambda;
     // finally add the edge to the graph
-    g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
+    g2o::RobustKernelCauchy* rk = new g2o::RobustKernelCauchy;
     v_se3->setRobustKernel(rk);
     if(!graph_ptr->addEdge(v_se3))
     {
