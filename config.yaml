@@ -1,9 +1,20 @@
 ---
-
 pathOut: "/home/gchahine/optimizerOutput/"
 graphConstraints: "/home/gchahine/packages/dream-multi-checker/build/graph_input.csv"
 graphInitValues: "/home/gchahine/packages/dream-multi-checker/build/graph_initial_estimate.csv"
 maxIterations: "1000"
+autoMatchDir:
+- "/mnt/storage/Backpack_Dataset/cross-seasonal-semantic-dataset/lake-bPearl/keyframes/keyframes/new/0/"
+- "/mnt/storage/Backpack_Dataset/cross-seasonal-semantic-dataset/lake-bPearl/keyframes/keyframes/new/1/"
+- "/mnt/storage/Backpack_Dataset/cross-seasonal-semantic-dataset/lake-bPearl/keyframes/keyframes/new/2/"
+- "/mnt/storage/Backpack_Dataset/cross-seasonal-semantic-dataset/lake-bPearl/keyframes/keyframes/new/3/"
+- "/mnt/storage/Backpack_Dataset/cross-seasonal-semantic-dataset/lake-bPearl/keyframes/keyframes/new/4/"
+- "/mnt/storage/Backpack_Dataset/cross-seasonal-semantic-dataset/lake-bPearl/keyframes/keyframes/new/5/"
+- "/mnt/storage/Backpack_Dataset/cross-seasonal-semantic-dataset/lake-bPearl/keyframes/keyframes/new/6/"
+- "/mnt/storage/Backpack_Dataset/cross-seasonal-semantic-dataset/lake-bPearl/keyframes/keyframes/new/7/"
+
+transformsCsv: "/home/gchahine/packages/dream-multi-checker/build/ol_transforms.csv"
+autoNameTemplate: "semantic_icp_"
 
 
 
