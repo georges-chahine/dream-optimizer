@@ -23,8 +23,13 @@
 #include "g2o/core/optimization_algorithm_levenberg.h"
 #include <g2o/core/sparse_optimizer.h>
 #include <g2o/core/block_solver.h>
+#include <g2o/core/base_unary_edge.h>
 #include "g2o/core/solver.h"
-#include "edge_se3.h"
+#include <g2o/types/slam3d/edge_se3_xyzprior.h>
+//#include <g2o/types/slam3d/edge_se3_prior.h>
+#include <g2o/types/slam3d/edge_se3.h>
+//#include "edge_se3.h"
+//#include "edge_se3_xyzprior.h"
 
 using namespace std;
 using namespace Eigen;
@@ -48,6 +53,24 @@ M load_csv (const std::string & path) {
         ++rows;
     }
     return Map<const Matrix<typename M::Scalar, M::RowsAtCompileTime, M::ColsAtCompileTime, RowMajor>>(values.data(), rows, values.size()/rows);
+}
+template<typename N>
+N load_xyz (const std::string & path) {
+    std::ifstream indata;
+    indata.open(path);
+    std::string line;
+    std::vector<double> values;
+    uint rows = 0;
+    while (std::getline(indata, line)) {
+        std::stringstream lineStream(line);
+        std::string cell;
+        while (std::getline(lineStream, cell, ' ')) {
+            //  std::cout<<cell<<std::endl;
+            values.push_back(std::stod(cell));
+        }
+        ++rows;
+    }
+    return Map<const Matrix<typename N::Scalar, N::RowsAtCompileTime, N::ColsAtCompileTime, RowMajor>>(values.data(), rows, values.size()/rows);
 }
 
 
@@ -74,7 +97,12 @@ Eigen::MatrixXd load_g2o (std::string path, MatrixXd transforms0) {
     int maxKF=transforms0(transforms0.rows()-1,0);
     std::cout<<"maxKF is " <<maxKF<<std::endl;
     while (inFile >> str >>idxNbr >> x >>y >>z >>qx>>qy>>qz>>qw)
+
+
     {
+
+        if (str=="PARAMS_SE3OFFSET"){continue;};
+        if (str=="FIX"){continue;}
         if (str!="VERTEX_SE3:QUAT"){break;};
         xV.push_back(x);
         yV.push_back(y);
@@ -149,7 +177,7 @@ Eigen::MatrixXd load_g2o (std::string path, MatrixXd transforms0) {
 
     inFile.close();
 
-    std::cout<<transforms<<std::endl;
+    //std::cout<<transforms<<std::endl;
 
     return transforms;
 }
@@ -166,7 +194,6 @@ void addEdge(const Eigen::Isometry3d & a_T_b, const int id_a, const int id_b,
     Vector3d trans(a_T_b(0,3),a_T_b(1,3),a_T_b(2,3));
 
     g2o::SE3Quat pose(q,trans);
-
 
     // g2o::VertexSE3Expmap * v_se3= new g2o::VertexSE3Expmap();
     g2o::EdgeSE3* v_se3 = new g2o::EdgeSE3;
@@ -209,6 +236,158 @@ void addEdge(const Eigen::Isometry3d & a_T_b, const int id_a, const int id_b,
     }
 }
 
+
+void addXYZEdgeSE3(const Eigen::Vector3d pos_new_z, const int id_a,
+                   g2o::OptimizableGraph* graph_ptr, Eigen::Matrix<double, 3, 3> Lambda)
+{
+    g2o::EdgeSE3XYZPrior* v_se3 = new g2o::EdgeSE3XYZPrior;
+    //g2o::EdgeSE3Prior* v_se3_2 = new g2o::EdgeSE3Prior;
+    //std::cout<<"id a is " <<id_a<<std::endl;
+    // retrieve vertex pointers from graph with id's
+    //g2o::OptimizableGraph::Vertex * pose_a_vertex
+    //       = dynamic_cast<g2o::OptimizableGraph::Vertex*>
+    //      (graph_ptr->vertices()[id_a]);
+
+    g2o::VertexSE3* v1 = (g2o::VertexSE3*)graph_ptr->vertex(id_a);
+
+    // error check vertices and associate them with the edge
+    assert(v1!=NULL);
+    assert(v1->dimension() == 6);
+    // e->vertices()[0] = pose_a_vertex;
+    //v_se3->vertices()[0] = pose_a_vertex;
+    v_se3->setVertex(0, v1);
+    //v_se3_2->setVertex(0, v1);
+    //v_se3->setId(id_a);
+    v_se3->setParameterId(0, 0);
+
+    //e->vertices()[1] = pose_b_vertex;
+    //v_se3->vertices()[1] = pose_b_vertex;
+    // add information matrix
+    //Eigen::Matrix<double, 6, 6> Lambda;
+    //Lambda.setIdentity();
+
+    // set the observation and imformation matrix
+    //Eigen::Vector3d pos_new_z2( 10.0, 10.0, 5.0);
+    //Eigen::Matrix3d pos_inf_new_z = Eigen::Matrix3d::Zero();
+    v_se3->setMeasurement(pos_new_z);
+    //Eigen::Isometry3d a;
+    //a.setIdentity();
+    //v_se3_2->setMeasurement(a);
+    //pos_inf_new_z(0, 0) = 0;
+    //pos_inf_new_z(1, 1) = 0;
+    //pos_inf_new_z(2, 2) = 1E3;
+    // e->setMeasurement(a_T_b);
+    // e->information() = Lambda;
+    //v_se3->information() = Lambda;
+    // std::cout<<"lambda is "<<Lambda<<std::endl;
+    v_se3->setInformation(Lambda);
+
+    //  Eigen::Matrix<double, 6, 6> Lambda_2;
+    //  Lambda_2.setIdentity();
+    // v_se3_2->setInformation(Lambda_2);
+    //v_se3->setInformation(pos_inf_new_z);
+    // v_se3_2->setParameterId(0, 0);
+    // finally add the edge to the graph
+    //g2o::RobustKernelGemanMcClure* rk = new g2o::RobustKernelGemanMcClure;
+    g2o::RobustKernelCauchy* rk = new g2o::RobustKernelCauchy;
+    v_se3->setRobustKernel(rk);
+    if(!graph_ptr->addEdge(v_se3))
+    {
+        assert(false);
+    }
+}
+
+
+
+void addDEMconstraints(double DEM_x0, double DEM_y0, MatrixXd& DEM, unsigned int skip, int maxKF, std::vector<std::string> autoMatchDir, std::string autoNameTemplate, Eigen::MatrixXd transforms, g2o::OptimizableGraph& graph, Eigen::Matrix<double, 3, 3> Lambda){
+
+    std::ofstream Zdata;
+    Zdata.open("DEM_Z.csv");
+
+    double zInit=0;
+    double zRef=0;
+    for (unsigned int i=0; i<transforms.rows();i=i+skip){
+        int current_KF=transforms(i,0);
+        int current_T=transforms(i,1);
+        std::cout<<"KF,T: "<<current_KF<<","<<current_T<<std::endl;
+        if (transforms(i,2)==0&& transforms(i,3)==0&&transforms(i,4)==0&&transforms(i,5)==0){
+            std::cout<<"keyframe not found in graph, skipping KF,T: "<<current_KF<<","<<current_T<<std::endl;
+            continue;
+
+        }
+        if(current_T!=0){continue;}
+
+        if (current_KF%8!=0){continue;}
+
+        std::string strCsvName=autoMatchDir[current_T]+"/"+autoNameTemplate+std::to_string(current_KF)+".csv";
+        MatrixXd current_csv = load_csv<MatrixXd>(strCsvName);
+
+
+        double x0=current_csv(0,1);
+        double y0=current_csv(0,2);
+        double z0=current_csv(0,3);
+
+
+        std::vector<double> distances;
+        std::vector<unsigned int> indices;
+        //std::cout<<"DEM rows are: "<<DEM.rows()<<std::endl;
+        //std::cout<<"DEM cols are: "<<DEM.cols()<<std::endl;
+        // std::cout<<"DEM_x0 is: "<<DEM_x0<<std::endl;
+        // std::cout<< "x0 is "<<x0<<std::endl;
+        for (unsigned int j=0; j<DEM.rows();j=j+1){
+
+            double currentX_DEM=DEM(j,1)+DEM_x0-DEM(0,1);
+            double currentY_DEM=DEM(j,0)+DEM_y0-DEM(0,0);
+
+            if ( sqrt(pow(x0-currentX_DEM,2))>0.5 || sqrt(pow(y0-currentY_DEM,2))>0.5 ){
+
+                continue;
+            }
+            indices.push_back(j);
+            double D=sqrt(pow(currentX_DEM-x0,2)+pow(currentY_DEM-y0,2));
+            //std::cout<<"D is "<<D<<std::endl;
+            distances.push_back(D);
+
+        }
+        double lowestD=9999;
+        unsigned int chosenIdx;
+        if (distances.size()==0){
+            std::cout<<"distances size is: "<<distances.size()<<std::endl;
+            std::cout<<"FATAL: DEM query failed, results might be unreliable"<<std::endl;
+        }
+        for (unsigned int j=0; j<distances.size(); j++){
+
+            if (distances[j]<lowestD)
+            {
+                lowestD=distances[j];
+                chosenIdx=indices[j];
+
+            }
+
+
+        }
+        int currentNode=returnIndex(current_KF,current_T, maxKF);
+        double zConstraint=-DEM(chosenIdx,2); //-DEM(0,2);
+
+        if (currentNode==0)
+        {
+            zInit=zConstraint;
+            zRef=z0;
+
+
+        }
+
+
+        zConstraint=zConstraint-zInit;
+
+        Vector3d T( 0, 0, zConstraint);
+        std::cout<<"currentNode is "<<currentNode<<" zConstraint is "<<zConstraint<<" chosenIDX is "<<chosenIdx<<std::endl;
+        Zdata<<zConstraint<<","<<z0-zRef<<","<<current_KF<<","<<current_T<<std::endl;
+        addXYZEdgeSE3(T, currentNode, &graph, Lambda);
+    }
+    Zdata.close();
+
+}
 
 void addOverlappingEdge(int mode, unsigned int skip, int maxKF, int searchKFLimit, std::vector<std::string> autoMatchDir, std::vector<std::vector<std::string>> csvFiles, std::string autoNameTemplate, Eigen::MatrixXd transforms, g2o::OptimizableGraph& graph, Eigen::Matrix<double, 6, 6> Lambda){
 
@@ -382,35 +561,45 @@ void addPosesToGraph(Eigen::Isometry3d pose_estimate, int id, g2o::OptimizableGr
 
     graph_ptr->addVertex(v_se3);
 
-
-    /*
-
-    VertexPose * v = new VertexPose();
-    v->setEstimate(pose_estimate);
-    v->setId(id);
-    v->setFixed(false);
-
-
-    if (id==0)
-    {
-        std::cout<<"id is "<<id<<std::endl;
-        v->setFixed(true);
-    }
-
-
-    graph_ptr->addVertex(v);
-*/
 }
 
 int main(int argc, char *argv[]){
     // initialize graph
 
     g2o::SparseOptimizer graph;
+    g2o::ParameterSE3Offset* cameraOffset = new g2o::ParameterSE3Offset;
+    cameraOffset->setId(0);
+    graph.addParameter(cameraOffset);
+
+
     int dir;
     graph.setVerbose(true);
     YAML::Node config = YAML::LoadFile("../config.yaml");
 
     std::string graphConstraintsStr = config["graphConstraints"].as<std::string>();
+    std::string useDEMStr = config["useDEM"].as<std::string>();
+    bool useDEM=false;
+
+    if (useDEMStr=="True" || useDEMStr=="true")
+    {
+        useDEM=true;
+    }
+    MatrixXd DEM;
+    double DEM_x0;
+    double DEM_y0;
+    if (useDEM){
+
+        std::string DEMStr = config["DEM"].as<std::string>();
+        std::cout<<"Loading DEM..."<<std::endl;
+        DEM= load_xyz<MatrixXd>(DEMStr);
+        std::string DEM_x0Str = config["DEM_x0"].as<std::string>();
+        std::string DEM_y0Str = config["DEM_y0"].as<std::string>();
+        std::string::size_type sz, sz2;
+        DEM_y0 = std::stod (DEM_x0Str,&sz);
+        DEM_x0 = std::stod (DEM_y0Str,&sz2);
+        std::cout<<setprecision(20)<<DEM_x0<<" "<<DEM_y0<<std::endl;
+    }
+
     std::string graphInitValuesStr= config["graphInitValues"].as<std::string>();
     std::string pathOut = config["pathOut"].as<std::string>();
     std::string maxIterationsStr = config["maxIterations"].as<std::string>();
@@ -423,6 +612,16 @@ int main(int argc, char *argv[]){
     MatrixXd graphConstraints = load_csv<MatrixXd>(graphConstraintsStr);
     MatrixXd graphInitValues = load_csv<MatrixXd>(graphInitValuesStr);
     int maxPoseId=0;
+    std::vector<int> poseIdVec;
+
+    for (int i=0; i<graphConstraints.rows(); i++){
+        poseIdVec.push_back(graphConstraints(i,1));
+
+
+    }
+
+
+
     for (int i=0; i<graphInitValues.rows(); i++){
 
 
@@ -441,6 +640,17 @@ int main(int argc, char *argv[]){
         T(2,3)=graphInitValues(i,3);
 
         addPosesToGraph(T, poseId, &graph);
+
+
+        /*  for (int j=0; j<poseIdVec.size(); j++){
+
+            if (poseId==poseIdVec[j]){
+                addPosesToGraph(T, poseId, &graph);
+                break;
+            }
+        }
+
+*/
 
         if (poseId>maxPoseId)
         {
@@ -468,7 +678,7 @@ int main(int argc, char *argv[]){
         T(2,3)=graphConstraints(i,4);
 
         //std::cout<<"T is \n"<<T.matrix()<<std::endl;
-        if (T.matrix().isIdentity(0.01)){
+        if (T.matrix().isIdentity()){
             std::cout<<"filtering Identity"<<std::endl;
             continue;
 
@@ -477,17 +687,45 @@ int main(int argc, char *argv[]){
         Eigen::Matrix<double, 6, 6> Lambda;
         Lambda.setIdentity();
 
+
         Lambda(0,0)=Lambda(1,1)=Lambda(2,2)=1/graphConstraints(i,9);
         Lambda(3,3)=Lambda(4,4)=Lambda(5,5)=1/graphConstraints(i,9);
-
         //Lambda(0,0)=Lambda(1,1)=Lambda(2,2)=Lambda(3,3)=Lambda(4,4)=Lambda(5,5)=1/1;
+
+        for (int j=0; j<poseIdVec.size(); j++){
+
+            if (pose_a_id==poseIdVec[j] || pose_a_id==0 ){
+                //addEdge(T, pose_a_id, pose_b_id, &graph, Lambda);
+                break;
+            }
+        }
+
 
         addEdge(T, pose_a_id, pose_b_id, &graph, Lambda);
 
 
 
-    }
 
+    }
+    if (useDEM){
+        Eigen::Matrix<double, 3, 3> Lambda;
+        Lambda.setIdentity();
+
+        Lambda(0,0)=Lambda(1,1)=1/99999999;
+        Lambda(2,2)=1/0.1;
+
+        //Lambda(0,0)=Lambda(1,1)=Lambda(2,2)=Lambda(3,3)=Lambda(4,4)=Lambda(5,5)=1/1;
+        MatrixXd transforms0 = load_csv<MatrixXd>(transformsFile);
+        int maxKF=transforms0(transforms0.rows()-1,0);
+        int skip=1;
+
+        MatrixXd transforms;
+
+        transforms = transforms0; //load_g2o(g2oFile, transforms0);
+
+        addDEMconstraints(DEM_x0, DEM_y0, DEM, skip, maxKF, autoMatchDir, autoNameTemplate, transforms, graph, Lambda);
+
+    }
 
 
     bool DENSE=false;
@@ -541,6 +779,7 @@ int main(int argc, char *argv[]){
     MatrixXd transforms;
     MatrixXd transforms0 = load_csv<MatrixXd>(transformsFile);
     int maxKF=transforms0(transforms0.rows()-1,0);
+
     transforms = load_g2o(g2oFile, transforms0);
 
 

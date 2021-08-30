@@ -1,21 +1,25 @@
 ---
 pathOut: "/home/gchahine/optimizerOutput/"
-graphConstraints: "/home/gchahine/packages/dream-multi-checker/build/graph_input.csv"
-graphInitValues: "/home/gchahine/packages/dream-multi-checker/build/graph_initial_estimate.csv"
+graphConstraints: "/home/gchahine/packages/dream-multi-checker/build/2/19/graph_input.csv"
+graphInitValues: "/home/gchahine/packages/dream-multi-checker/build/2/19/graph_initial_estimate.csv"
 maxIterations: "1000"
 autoMatchDir:
-- "/mnt/storage/Backpack_Dataset/cross-seasonal-semantic-dataset/lake-bPearl/keyframes/keyframes/new/0/"
-- "/mnt/storage/Backpack_Dataset/cross-seasonal-semantic-dataset/lake-bPearl/keyframes/keyframes/new/1/"
-- "/mnt/storage/Backpack_Dataset/cross-seasonal-semantic-dataset/lake-bPearl/keyframes/keyframes/new/2/"
-- "/mnt/storage/Backpack_Dataset/cross-seasonal-semantic-dataset/lake-bPearl/keyframes/keyframes/new/3/"
-- "/mnt/storage/Backpack_Dataset/cross-seasonal-semantic-dataset/lake-bPearl/keyframes/keyframes/new/4/"
-- "/mnt/storage/Backpack_Dataset/cross-seasonal-semantic-dataset/lake-bPearl/keyframes/keyframes/new/5/"
-- "/mnt/storage/Backpack_Dataset/cross-seasonal-semantic-dataset/lake-bPearl/keyframes/keyframes/new/6/"
-- "/mnt/storage/Backpack_Dataset/cross-seasonal-semantic-dataset/lake-bPearl/keyframes/keyframes/new/7/"
-
-transformsCsv: "/home/gchahine/packages/dream-multi-checker/build/ol_transforms.csv"
+- "/mnt/storage/cross-seasonal-semantic-dataset/lake-bPearl/post/mapper-12-months-2/0/"
+- "/mnt/storage/cross-seasonal-semantic-dataset/lake-bPearl/post/mapper-12-months-2/1/"
+- "/mnt/storage/cross-seasonal-semantic-dataset/lake-bPearl/post/mapper-12-months-2/2/"
+- "/mnt/storage/cross-seasonal-semantic-dataset/lake-bPearl/post/mapper-12-months-2/3/"
+- "/mnt/storage/cross-seasonal-semantic-dataset/lake-bPearl/post/mapper-12-months-2/4/"
+- "/mnt/storage/cross-seasonal-semantic-dataset/lake-bPearl/post/mapper-12-months-2/5/"
+- "/mnt/storage/cross-seasonal-semantic-dataset/lake-bPearl/post/mapper-12-months-2/6/"
+- "/mnt/storage/cross-seasonal-semantic-dataset/lake-bPearl/post/mapper-12-months-2/7/"
+- "/mnt/storage/cross-seasonal-semantic-dataset/lake-bPearl/post/mapper-12-months-2/8/"
+- "/mnt/storage/cross-seasonal-semantic-dataset/lake-bPearl/post/mapper-12-months-2/9/"
+- "/mnt/storage/cross-seasonal-semantic-dataset/lake-bPearl/post/mapper-12-months-2/10/"
+- "/mnt/storage/cross-seasonal-semantic-dataset/lake-bPearl/post/mapper-12-months-2/11/"
+transformsCsv: "/home/gchahine/packages/dream-multi-checker/build/2/19/ol_transforms.csv"
 autoNameTemplate: "semantic_icp_"
-
-
-
+useDEM: "false"
+DEM: "/home/gchahine/lake_modified.XYZ"
+DEM_x0: "296725.10986414447"
+DEM_y0: "5442395.173279924"
 
